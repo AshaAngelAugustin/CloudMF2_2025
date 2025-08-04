@@ -1,0 +1,8 @@
+CREATE PROCEDURE GetEmployeesByDept
+    @DeptID INT
+AS
+BEGIN
+    SELECT EmployeeID, FirstName, LastName, JobTitle
+    FROM Employees
+    WHERE DepartmentID = @DeptID
+END

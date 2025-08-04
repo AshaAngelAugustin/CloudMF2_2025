@@ -1,0 +1,54 @@
+CREATE PROCEDURE UpdateEmployeeSalary
+    @EmpID INT,
+    @PerformanceRating INT,
+    @NewSalary MONEY OUTPUT
+AS
+BEGIN
+    DECLARE @CurrentSalary MONEY
+    DECLARE @BonusPercent FLOAT
+    DECLARE @Error INT
+
+    BEGIN TRANSACTION
+
+    -- Get current salary
+    SELECT @CurrentSalary = Salary
+    FROM Employees
+    WHERE EmployeeID = @EmpID
+
+    IF @CurrentSalary IS NULL
+    BEGIN
+        PRINT 'Error: Employee not found.'
+        ROLLBACK TRANSACTION
+        RETURN -1
+    END
+
+    -- Determine bonus percentage based on performance
+    IF @PerformanceRating >= 90
+        SET @BonusPercent = 0.10
+    ELSE IF @PerformanceRating >= 75
+        SET @BonusPercent = 0.05
+    ELSE IF @PerformanceRating >= 60
+        SET @BonusPercent = 0.02
+    ELSE
+        SET @BonusPercent = 0.00
+
+    -- Calculate new salary
+    SET @NewSalary = @CurrentSalary + (@CurrentSalary * @BonusPercent)
+
+    -- Update salary in the table
+    UPDATE Employees
+    SET Salary = @NewSalary
+    WHERE EmployeeID = @EmpID
+
+    -- Check for errors
+    SELECT @Error = @@ERROR
+    IF @Error != 0
+    BEGIN
+        PRINT 'Error: Failed to update salary.'
+        ROLLBACK TRANSACTION
+        RETURN -2
+    END
+
+    COMMIT TRANSACTION
+    RETURN 0
+END
