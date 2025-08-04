@@ -1,0 +1,35 @@
+CREATE PROCEDURE TopCustomer
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @TopCompany VARCHAR(35);
+    DECLARE @TopValue INT = 0;
+    DECLARE @ThisCompany VARCHAR(35);
+    DECLARE @ThisValue INT;
+
+    DECLARE curThisCust CURSOR FOR
+        SELECT CompanyName,
+               SUM(SalesOrderItems.Quantity * Products.UnitPrice) AS VALUE
+        FROM Customers
+        LEFT JOIN SalesOrders ON Customers.CustomerID = SalesOrders.CustomerID
+        LEFT JOIN SalesOrderItems ON SalesOrders.OrderID = SalesOrderItems.OrderID
+        LEFT JOIN Products ON SalesOrderItems.ProductID = Products.ProductID
+        GROUP BY CompanyName;
+
+    OPEN curThisCust;
+    FETCH NEXT FROM curThisCust INTO @ThisCompany, @ThisValue;
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        IF @ThisValue > @TopValue
+        BEGIN
+            SET @TopValue = @ThisValue;
+            SET @TopCompany = @ThisCompany;
+        END
+        FETCH NEXT FROM curThisCust INTO @ThisCompany, @ThisValue;
+    END
+    CLOSE curThisCust;
+    DEALLOCATE curThisCust;
+
+    SELECT @TopCompany AS TopCompany, @TopValue AS TopValue;
+END
+
