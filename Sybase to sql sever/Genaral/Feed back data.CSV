@@ -1,0 +1,11 @@
+EmployeeID,Department,SatisfactionRating,Feedback
+201,HR,5,"Very satisfied with HR policies"
+202,Finance,4,"Quick payroll processing"
+203,IT,3,"Average technical support"
+204,Marketing,2,"Needs better campaign planning"
+205,Sales,5,"Excellent sales incentives"
+206,HR,4,"Helpful onboarding experience"
+207,Finance,3,"Satisfactory but can improve"
+208,IT,1,"Slow response to issues"
+209,Marketing,5,"Creative and energetic team"
+210,Sales,2,"High pressure for targets"

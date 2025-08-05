@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FAQ Chatbot</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; }
+    #chat-container { width: 400px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #ccc; padding: 20px; }
+    #chat-box { height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; background: #fafafa; }
+    .user { color: #0078d7; font-weight: bold; }
+    .bot { color: #333; }
+    #input-area { display: flex; }
+    #user-input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    #send-btn { padding: 8px 16px; background: #0078d7; color: #fff; border: none; border-radius: 4px; margin-left: 8px; cursor: pointer; }
+    #send-btn:hover { background: #005fa3; }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <h2>FAQ Chatbot</h2>
+    <div id="chat-box"></div>
+    <div id="input-area">
+      <input type="text" id="user-input" placeholder="Ask a question..." />
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+  <script>
+    // Load FAQ data from faq2.json
+    let faq = [];
+    fetch('FAQ2.JSON')
+      .then(response => response.json())
+      .then(data => { faq = data; })
+      .catch(() => {
+        // fallback sample data
+        faq = [
+          {
+            "Question": "Tell me about yourself.",
+            "Answer": "I'm a recent graduate in Computer Science with a passion for problem-solving and teamwork. During college, I led a project that optimized campus resource allocation, which sparked my interest in data-driven decision-making.",
+            "Category": "Employee portal"
+          }
+        ];
+      });
+
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    function appendMessage(sender, message) {
+      const msgDiv = document.createElement('div');
+      msgDiv.innerHTML = `<span class="${sender}">${sender === 'user' ? 'You' : 'Bot'}:</span> ${message}`;
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function findAnswer(query) {
+      query = query.toLowerCase();
+      for (let item of faq) {
+        if (item.Question.toLowerCase().includes(query)) {
+          return item.Answer;
+        }
+      }
+      return "Sorry, I couldn't find an answer to your question.";
+    }
+
+    sendBtn.onclick = () => {
+      const question = userInput.value.trim();
+      if (!question) return;
+      appendMessage('user', question);
+      const answer = findAnswer(question);
+      setTimeout(() => appendMessage('bot', answer), 500);
+      userInput.value = '';
+    };
+
+    userInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') sendBtn.click();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+[
+  {
+    "Question": "Tell me about yourself.",
+    "Answer": "I'm a recent graduate in Computer Science with a passion for problem-solving and teamwork. During college, I led a project that optimized campus resource allocation, which sparked my interest in data-driven decision-making.",
+    "Category": "Employee portal"
+  },
+  {
+    "Question": "Why should we hire you?",
+    "Answer": "I bring fresh energy, a strong foundation in [your field], and a willingness to learn. I’m adaptable and eager to contribute to your team’s success.",
+    "Category": "Employee portal"
+  },
+  {
+    "Question": "What are your strengths?",
+    "Answer": "I’m a quick learner, detail-oriented, and have strong communication skills. I thrive in collaborative environments.",
+    "Category": "Employee portal"
+  },
+  {
+    "Question": "What are your weaknesses?",
+    "Answer": "I used to struggle with public speaking, but I’ve been actively working on it by participating in group presentations and workshops.",
+    "Category": "Employee portal"
+  },
+  {
+    "Question": "Where do you see yourself in 5 years?",
+    "Answer": "I see myself growing into a leadership role, having contributed meaningfully to projects and mentoring junior team members.",
+    "Category": "Employee portal"
+  }

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Jobs Tracker Visualization</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h2>Parent Job Name Count by APM Name</h2>
+  <canvas id="parentJobChart"></canvas>
+  <h2>Platinum Migration Status by APM Name</h2>
+  <canvas id="statusChart"></canvas>
+  <script>
+    // Sample processed data (replace with actual CSV parsing)
+    const apmData = [
+      { apm: "CPEC Capitation Payments (GBD)", parentCount: 8, completed: 50, pending: 0 },
+      { apm: "Another APM Name", parentCount: 5, completed: 20, pending: 5 }
+    ];
+
+    // Bar chart for Parent Job Name Count
+    new Chart(document.getElementById('parentJobChart'), {
+      type: 'bar',
+      data: {
+        labels: apmData.map(d => d.apm),
+        datasets: [{
+          label: 'Parent Job Name Count',
+          data: apmData.map(d => d.parentCount),
+          backgroundColor: 'rgba(54, 162, 235, 0.7)'
+        }]
+      }
+    });
+
+    // Stacked bar chart for Platinum Migration Status
+    new Chart(document.getElementById('statusChart'), {
+      type: 'bar',
+      data: {
+        labels: apmData.map(d => d.apm),
+        datasets: [
+          {
+            label: 'Completed',
+            data: apmData.map(d => d.completed),
+            backgroundColor: 'rgba(75, 192, 192, 0.7)'
+          },
+          {
+            label: 'Pending',
+            data: apmData.map(d => d.pending),
+            backgroundColor: 'rgba(255, 99, 132, 0.7)'
+          }
+        ]
+      },
+      options: {
+        scales: { x: { stacked: true }, y: { stacked: true } }
+      }
+    });
+  </script>
+</body>
+</html>
