@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Platinum Migration Status by APM Name</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h2>Platinum Migration Status by APM Name</h2>
+  <canvas id="statusChart"></canvas>
+  <script>
+    // Sample processed data (replace with actual CSV parsing)
+    const apmNames = [
+      "CPEC Capitation Payments (GBD)",
+      "Another APM Name"
+    ];
+    const statusTypes = ["Completed", "Pending"];
+    const statusData = {
+      "CPEC Capitation Payments (GBD)": { "Completed": 98, "Pending": 2 },
+      "Another APM Name": { "Completed": 20, "Pending": 5 }
+    };
+
+    new Chart(document.getElementById('statusChart'), {
+      type: 'bar',
+      data: {
+        labels: apmNames,
+        datasets: statusTypes.map((status, i) => ({
+          label: status,
+          data: apmNames.map(apm => statusData[apm][status] || 0),
+          backgroundColor: i === 0 ? 'rgba(75, 192, 192, 0.7)' : 'rgba(255, 99, 132, 0.7)'
+        }))
+      },
+      options: {
+        scales: { x: { stacked: true }, y: { stacked: true } }
+      }
+    });
+  </script>
+</body>
+</html>
