@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Database Converter</title>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h1>Database Converter</h1>
+        <p>Convert your database files between different formats</p>
+      </header>
+
+      <main class="container">
+        <div class="converter-card">
+          <div class="upload-section">
+            <h2>Select Input File</h2>
+            <div class="file-upload" id="fileUpload">
+              <div class="upload-area">
+                <div class="upload-icon">📁</div>
+                <p>Drag & drop your file here or <span class="browse-text">browse</span></p>
+                <p class="supported-formats">Supported: .txt, .sql, .csv, .json</p>
+                <input type="file" id="fileInput" accept=".txt,.sql,.csv,.json" hidden>
+              </div>
+            </div>
+            <div class="file-info" id="fileInfo" style="display: none;">
+              <p><strong>Selected file:</strong> <span id="fileName"></span></p>
+              <p><strong>Size:</strong> <span id="fileSize"></span></p>
+            </div>
+          </div>
+
+          <div class="conversion-section">
+            <h2>Select Target Database</h2>
+            <div class="database-options">
+              <label class="db-option">
+                <input type="radio" name="targetDb" value="oracle">
+                <div class="db-card">
+                  <div class="db-icon">🔶</div>
+                  <h3>Oracle</h3>
+                  <p>Convert to Oracle SQL format</p>
+                </div>
+              </label>
+              
+              <label class="db-option">
+                <input type="radio" name="targetDb" value="sqlserver">
+                <div class="db-card">
+                  <div class="db-icon">🔷</div>
+                  <h3>SQL Server</h3>
+                  <p>Convert to Microsoft SQL Server format</p>
+                </div>
+              </label>
+              
+              <label class="db-option">
+                <input type="radio" name="targetDb" value="sybase">
+                <div class="db-card">
+                  <div class="db-icon">🔸</div>
+                  <h3>Sybase</h3>
+                  <p>Convert to Sybase SQL format</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="action-section">
+            <button id="convertBtn" class="convert-btn" disabled>
+              <span class="btn-text">Convert File</span>
+              <span class="btn-loader" style="display: none;">⏳ Converting...</span>
+            </button>
+          </div>
+
+          <div class="result-section" id="resultSection" style="display: none;">
+            <h2>Conversion Complete</h2>
+            <div class="result-info">
+              <p><strong>Output format:</strong> <span id="outputFormat"></span></p>
+              <button id="downloadBtn" class="download-btn">📥 Download Converted File</button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer>
+        <p>&copy; 2025 Database Converter. Built with ❤️</p>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

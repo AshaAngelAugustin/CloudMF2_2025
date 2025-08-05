@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.1"><circle cx="30" cy="30" r="4"/></g></svg>') repeat;
+            animation: float 20s infinite linear;
+        }
+        
+        @keyframes float {
+            0% { transform: translateX(-50px) translateY(-50px); }
+            100% { transform: translateX(50px) translateY(50px); }
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .form-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            background: #f8faff;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e3f2fd;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .form-group:hover {
+            border-color: #4facfe;
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+        
+        .form-group i {
+            margin-right: 8px;
+            color: #4facfe;
+        }
+        
+        input[type="file"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px dashed #4facfe;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="file"]:hover {
+            border-color: #00f2fe;
+            background: #f0f9ff;
+        }
+        
+        select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e3f2fd;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+        
+        .convert-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .convert-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .convert-btn:hover::before {
+            left: 100%;
+        }
+        
+        .convert-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(79, 172, 254, 0.4);
+        }
+        
+        .convert-btn:active {
+            transform: translateY(0);
+        }
+        
+        .result {
+            margin-top: 30px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-header {
+            background: linear-gradient(45deg, #56ab2f 0%, #a8e6cf 100%);
+            padding: 20px 25px;
+            color: white;
+        }
+        
+        .result-header h3 {
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .result-header p {
+            margin-top: 5px;
+            opacity: 0.9;
+        }
+        
+        .comparison-section {
+            padding: 25px;
+        }
+        
+        .comparison-section h4 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            text-align: center;
+        }
+        
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .comparison-panel {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e3f2fd;
+        }
+        
+        .comparison-panel h5 {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 15px;
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .comparison-panel textarea {
+            width: 100%;
+            height: 250px;
+            padding: 15px;
+            border: none;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            background: #fafbfc;
+            resize: vertical;
+            line-height: 1.5;
+        }
+        
+        .comparison-panel textarea:focus {
+            outline: none;
+            background: white;
+        }
+        
+        .changes-summary {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid #ff6b6b;
+            margin-bottom: 20px;
+        }
+        
+        .changes-summary h5 {
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+        
+        .changes-summary ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .changes-summary li {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.4;
+        }
+        
+        .download-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.3);
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(17, 153, 142, 0.4);
+        }
+        
+        .icon {
+            margin-right: 8px;
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .form-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Database Converter</h1>
+            <p>Convert SQL scripts between Oracle, SQL Server, and Sybase instantly</p>
+        </div>
+        
+        <div class="content">
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="fileInput"><span class="icon">📁</span>Select File:</label>
+                    <input type="file" id="fileInput" accept=".txt,.sql,.csv">
+                </div>
+                
+                <div class="form-group">
+                    <label for="databaseSelect"><span class="icon">🎯</span>Convert to:</label>
+                    <select id="databaseSelect">
+                        <option value="">Select Database Type</option>
+                        <option value="oracle">🔥 Oracle</option>
+                        <option value="sqlserver">🏢 SQL Server</option>
+                        <option value="sybase">📊 Sybase</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="convert-btn" onclick="convertFile()">
+                <span class="icon">🚀</span>Convert File
+            </button>
+            
+            <div id="result" class="result">
+                <div class="result-header">
+                    <h3><span class="icon">✅</span>Conversion Result:</h3>
+                    <p id="resultText"></p>
+                </div>
+                
+                <div class="comparison-section" style="display: block;">
+                    <h4>📊 File Comparison</h4>
+                    <div class="comparison-container">
+                        <div class="comparison-panel">
+                            <h5>📄 Original File</h5>
+                            <textarea id="originalContent" readonly placeholder="Original file content will appear here..."></textarea>
+                        </div>
+                        <div class="comparison-panel">
+                            <h5>✨ Converted File</h5>
+                            <textarea id="convertedContent" readonly placeholder="Converted file content will appear here..."></textarea>
+                        </div>
+                    </div>
+                    <div class="changes-summary">
+                        <h5>🔄 Changes Made:</h5>
+                        <ul id="changesList">
+                            <li>No changes yet - convert a file to see the differences</li>
+                        </ul>
+                    </div>
+                    
+                    <button class="download-btn" onclick="downloadFile()">
+                        <span class="icon">💾</span>Download Converted File
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let convertedContent = '';
+        let originalContent = '';
+        let originalFileName = '';
+        let changesMade = [];
+        
+        function convertFile() {
+            const fileInput = document.getElementById('fileInput');
+            const databaseSelect = document.getElementById('databaseSelect');
+            const result = document.getElementById('result');
+            const resultText = document.getElementById('resultText');
+            
+            if (!fileInput.files[0]) {
+                alert('Please select a file');
+                return;
+            }
+            
+            if (!databaseSelect.value) {
+                alert('Please select a database type');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            originalFileName = file.name;
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                originalContent = e.target.result;
+                const targetDB = databaseSelect.value;
+                
+                // Perform conversion and track changes
+                const conversionResult = performConversion(originalContent, targetDB);
+                convertedContent = conversionResult.content;
+                changesMade = conversionResult.changes;
+                
+                // Update UI
+                resultText.textContent = `File converted to ${targetDB.toUpperCase()} format successfully!`;
+                
+                // Show comparison
+                document.getElementById('originalContent').value = originalContent;
+                document.getElementById('convertedContent').value = convertedContent;
+                
+                // Show changes summary
+                displayChangesSummary();
+                
+                // Make sure result section is visible
+                result.style.display = 'block';
+                
+                // Debug: Log to console
+                console.log('Conversion completed. Changes made:', changesMade.length);
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        function performConversion(content, targetDB) {
+            let converted = content;
+            let changes = [];
+            
+            if (targetDB === 'oracle') {
+                // VARCHAR to VARCHAR2
+                if (content.includes('VARCHAR(')) {
+                    converted = converted.replace(/VARCHAR\(/g, 'VARCHAR2(');
+                    changes.push('Changed VARCHAR( to VARCHAR2(');
+                }
+                
+                // GETDATE() to SYSDATE
+                if (content.includes('GETDATE()')) {
+                    converted = converted.replace(/GETDATE\(\)/g, 'SYSDATE');
+                    changes.push('Changed GETDATE() to SYSDATE');
+                }
+                
+                // IDENTITY to Oracle sequence-based approach
+                if (content.includes('IDENTITY(1,1)')) {
+                    converted = converted.replace(/IDENTITY\(1,1\)/g, 'GENERATED BY DEFAULT AS IDENTITY');
+                    changes.push('Changed IDENTITY(1,1) to GENERATED BY DEFAULT AS IDENTITY');
+                }
+                
+                // TOP to ROWNUM
+                if (content.includes('SELECT TOP')) {
+                    converted = converted.replace(/SELECT TOP (\d+)/g, 'SELECT * FROM (SELECT');
+                    converted = converted.replace(/ORDER BY/g, 'ORDER BY) WHERE ROWNUM <= $1 ORDER BY');
+                    changes.push('Changed SELECT TOP to ROWNUM-based query');
+                }
+                
+                // DATETIME to DATE
+                if (content.includes('DATETIME')) {
+                    converted = converted.replace(/DATETIME/g, 'DATE');
+                    changes.push('Changed DATETIME to DATE');
+                }
+                
+                // DECIMAL to NUMBER
+                if (content.includes('DECIMAL(')) {
+                    converted = converted.replace(/DECIMAL\(/g, 'NUMBER(');
+                    changes.push('Changed DECIMAL( to NUMBER(');
+                }
+                
+                // INT to NUMBER
+                if (content.includes('INT ')) {
+                    converted = converted.replace(/INT /g, 'NUMBER ');
+                    changes.push('Changed INT to NUMBER');
+                }
+                
+            } else if (targetDB === 'sqlserver') {
+                // VARCHAR2 to VARCHAR
+                if (content.includes('VARCHAR2(')) {
+                    converted = converted.replace(/VARCHAR2\(/g, 'VARCHAR(');
+                    changes.push('Changed VARCHAR2( to VARCHAR(');
+                }
+                
+                // SYSDATE to GETDATE()
+                if (content.includes('SYSDATE')) {
+                    converted = converted.replace(/SYSDATE/g, 'GETDATE()');
+                    changes.push('Changed SYSDATE to GETDATE()');
+                }
+                
+                // Oracle sequences to IDENTITY
+                if (content.includes('.NEXTVAL')) {
+                    converted = converted.replace(/\w+\.NEXTVAL/g, 'IDENTITY(1,1)');
+                    changes.push('Removed .NEXTVAL and added IDENTITY(1,1)');
+                }
+                
+                // NUMBER to appropriate SQL Server types
+                if (content.includes('NUMBER(')) {
+                    converted = converted.replace(/NUMBER\(/g, 'DECIMAL(');
+                    changes.push('Changed NUMBER( to DECIMAL(');
+                }
+                
+                if (content.includes('NUMBER ')) {
+                    converted = converted.replace(/NUMBER /g, 'INT ');
+                    changes.push('Changed NUMBER to INT');
+                }
+                
+                // ROWNUM to TOP
+                if (content.includes('ROWNUM')) {
+                    converted = converted.replace(/WHERE ROWNUM <= (\d+)/g, '');
+                    converted = converted.replace(/SELECT \* FROM \(SELECT/g, 'SELECT TOP $1');
+                    changes.push('Changed ROWNUM to TOP syntax');
+                }
+                
+                // LIMIT to TOP
+                if (content.includes('LIMIT ')) {
+                    converted = converted.replace(/LIMIT (\d+)/g, '');
+                    converted = converted.replace(/SELECT/g, 'SELECT TOP $1');
+                    changes.push('Changed LIMIT to TOP');
+                }
+                
+            } else if (targetDB === 'sybase') {
+                // VARCHAR2 to VARCHAR
+                if (content.includes('VARCHAR2(')) {
+                    converted = converted.replace(/VARCHAR2\(/g, 'VARCHAR(');
+                    changes.push('Changed VARCHAR2( to VARCHAR(');
+                }
+                
+                // SYSDATE to GETDATE()
+                if (content.includes('SYSDATE')) {
+                    converted = converted.replace(/SYSDATE/g, 'GETDATE()');
+                    changes.push('Changed SYSDATE to GETDATE()');
+                }
+                
+                // Handle different syntax for LIMIT
+                if (content.includes('LIMIT ')) {
+                    converted = converted.replace(/LIMIT (\d+)/g, '');
+                    converted = converted.replace(/SELECT/g, 'SET ROWCOUNT $1; SELECT');
+                    changes.push('Changed LIMIT to SET ROWCOUNT');
+                }
+                
+                // TOP to SET ROWCOUNT
+                if (content.includes('SELECT TOP')) {
+                    converted = converted.replace(/SELECT TOP (\d+)/g, 'SET ROWCOUNT $1; SELECT');
+                    changes.push('Changed SELECT TOP to SET ROWCOUNT');
+                }
+                
+                // NUMBER to appropriate Sybase types
+                if (content.includes('NUMBER(')) {
+                    converted = converted.replace(/NUMBER\(/g, 'DECIMAL(');
+                    changes.push('Changed NUMBER( to DECIMAL(');
+                }
+                
+                if (content.includes('NUMBER ')) {
+                    converted = converted.replace(/NUMBER /g, 'INT ');
+                    changes.push('Changed NUMBER to INT');
+                }
+                
+                // IDENTITY syntax adjustment
+                if (content.includes('IDENTITY(1,1)')) {
+                    converted = converted.replace(/IDENTITY\(1,1\)/g, 'IDENTITY');
+                    changes.push('Changed IDENTITY(1,1) to IDENTITY');
+                }
+            }
+            
+            if (changes.length === 0) {
+                changes.push('No database-specific changes needed for this file');
+            }
+            
+            return { content: converted, changes: changes };
+        }
+        
+        function displayChangesSummary() {
+            const changesList = document.getElementById('changesList');
+            changesList.innerHTML = '';
+            
+            changesMade.forEach(change => {
+                const li = document.createElement('li');
+                li.textContent = change;
+                changesList.appendChild(li);
+            });
+        }
+        
+        function downloadFile() {
+            const databaseSelect = document.getElementById('databaseSelect');
+            const targetDB = databaseSelect.value;
+            const fileName = originalFileName.replace(/\.[^/.]+$/, '') + '_' + targetDB + '.sql';
+            
+            const blob = new Blob([convertedContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
