@@ -9,3 +9,7 @@ Q4: What are your weaknesses?
 A4: "I used to struggle with public speaking, but I’ve been actively working on it by participating in group presentations and workshops."
 Q5: Where do you see yourself in 5 years?	
 A6: "I see myself growing into a leadership role, having contributed meaningfully to projects and mentoring junior team members."
+
+Report viewer
+Testdata Migration group
+DB code convertor
