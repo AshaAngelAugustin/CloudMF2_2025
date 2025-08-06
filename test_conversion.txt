@@ -1,0 +1,13 @@
+-- Test file to verify database converter works
+CREATE TABLE test_table (
+    id INT IDENTITY(1,1),
+    name VARCHAR(100),
+    description VARCHAR2(200),
+    created_date DATETIME DEFAULT GETDATE(),
+    price DECIMAL(10,2)
+);
+
+SELECT TOP 10 * FROM test_table WHERE created_date >= SYSDATE;
+
+INSERT INTO test_table (name, description, price) 
+VALUES ('Test Product', 'Sample description', 99.99);
