@@ -1,0 +1,16 @@
+Sample text file for database conversion testing.
+
+This file contains various database-related content:
+
+- Connection strings: server=localhost;database=testdb;
+- SQL queries: SELECT * FROM users WHERE status = 'active'
+- Data types: VARCHAR(255), INT, DECIMAL(10,2)
+- Functions: GETDATE(), UPPER(), LOWER()
+
+Some Oracle-specific syntax:
+- SYSDATE instead of GETDATE()
+- VARCHAR2 instead of VARCHAR
+- DUAL table references
+- NVL function usage
+
+This should be converted based on the target database selection.

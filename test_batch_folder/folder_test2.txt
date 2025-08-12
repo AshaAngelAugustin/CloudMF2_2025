@@ -1,0 +1,17 @@
+Simple database configuration file
+
+Server settings:
+- Host: localhost
+- Port: 1521 (Oracle default)
+- Database: ORCL
+- Schema: HR
+
+Query examples:
+SELECT SYSDATE FROM DUAL;
+SELECT NVL(commission_pct, 0) FROM employees;
+SELECT TO_CHAR(hire_date, 'YYYY-MM-DD') FROM employees;
+
+Data types to convert:
+VARCHAR2(100) -> VARCHAR(100)
+NUMBER -> INT/DECIMAL
+DATE -> DATETIME

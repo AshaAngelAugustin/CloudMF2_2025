@@ -1,89 +1,2319 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Database Converter</title>
-  </head>
-  <body>
-    <div id="app">
-      <header>
-        <h1>Database Converter</h1>
-        <p>Convert your database files between different formats</p>
-      </header>
+    
+    <!-- JSZip library for creating ZIP files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        body.dark-theme {
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 100%);
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        body.dark-theme .container {
+            background: rgba(20, 20, 30, 0.95);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .header {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            padding: 40px 30px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        body.dark-theme .header {
+            background: linear-gradient(45deg, #2d1b69 0%, #11998e 100%);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .title-section h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .title-section p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+        }
+        
+        .theme-btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2em;
+        }
+        
+        .theme-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+        
+        .content {
+            padding: 40px 30px;
+            transition: all 0.3s ease;
+        }
+        
+        body.dark-theme .content {
+            color: #e0e0e0;
+        }
+        
+        .form-group {
+            background: #f8faff;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e3f2fd;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        body.dark-theme .form-group {
+            background: #1a1a2e;
+            border-color: #2d2d44;
+        }
+        
+        body.dark-theme .form-group label {
+            color: #e0e0e0;
+        }
+        
+        body.dark-theme input[type="file"],
+        body.dark-theme select {
+            background: #2d2d44;
+            color: #e0e0e0;
+            border-color: #404060;
+        }
+        
+        body.dark-theme .comparison-panel {
+            background: #1a1a2e;
+            border-color: #2d2d44;
+        }
+        
+        body.dark-theme .comparison-panel textarea {
+            background: #2d2d44;
+            color: #e0e0e0;
+        }
+        
+        body.dark-theme .changes-summary {
+            background: linear-gradient(135deg, #2d1b69 0%, #11998e 100%);
+            color: #ffffff;
+            border-left-color: #4facfe;
+        }
+        
+        body.dark-theme .changes-summary h5 {
+            color: #ffffff;
+        }
+        
+        body.dark-theme .changes-summary li {
+            color: #e0e0e0;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.1"><circle cx="30" cy="30" r="4"/></g></svg>') repeat;
+            animation: float 20s infinite linear;
+        }
+        
+        @keyframes float {
+            0% { transform: translateX(-50px) translateY(-50px); }
+            100% { transform: translateX(50px) translateY(50px); }
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .form-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            background: #f8faff;
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e3f2fd;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .form-group:hover {
+            border-color: #4facfe;
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+        
+        .form-group i {
+            margin-right: 8px;
+            color: #4facfe;
+        }
+        
+        input[type="file"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px dashed #4facfe;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        input[type="file"]:hover {
+            border-color: #00f2fe;
+            background: #f0f9ff;
+        }
+        
+        /* File Options Styling */
+        .file-options {
+            margin-top: 10px;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+        }
+        
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.2);
+        }
+        
+        /* Selected Files Display */
+        .selected-files {
+            margin-top: 15px;
+            background: rgba(79, 172, 254, 0.05);
+            border: 1px solid rgba(79, 172, 254, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            display: none;
+        }
+        
+        .files-summary {
+            background: rgba(79, 172, 254, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4facfe;
+            margin-bottom: 10px;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(79, 172, 254, 0.1);
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-name {
+            font-weight: 600;
+            color: #2c3e50;
+            flex: 1;
+            margin-right: 10px;
+            word-break: break-word;
+        }
+        
+        .file-size {
+            font-size: 12px;
+            color: #555;
+            background: rgba(79, 172, 254, 0.15);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+        
+        /* Dark theme support for file names */
+        body.dark-theme .file-name {
+            color: #e0e0e0;
+        }
+        
+        body.dark-theme .file-size {
+            color: #bbb;
+            background: rgba(79, 172, 254, 0.3);
+        }
+        
+        /* Pagination Styles */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 15px;
+            gap: 10px;
+        }
+        
+        .pagination-btn {
+            padding: 6px 12px;
+            border: 1px solid #4facfe;
+            background: white;
+            color: #4facfe;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            min-width: 35px;
+            text-align: center;
+        }
+        
+        .pagination-btn:hover {
+            background: #4facfe;
+            color: white;
+        }
+        
+        .pagination-btn.active {
+            background: #4facfe;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination-info {
+            font-size: 12px;
+            color: #666;
+            margin: 0 10px;
+        }
+        
+        body.dark-theme .pagination-btn {
+            border-color: #4facfe;
+            background: #2d2d44;
+            color: #4facfe;
+        }
+        
+        body.dark-theme .pagination-btn:hover,
+        body.dark-theme .pagination-btn.active {
+            background: #4facfe;
+            color: white;
+        }
+        
+        body.dark-theme .pagination-info {
+            color: #bbb;
+        }
+        
+        select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e3f2fd;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+        
+        .convert-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .convert-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        
+        .convert-btn:hover::before {
+            left: 100%;
+        }
+        
+        .convert-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(79, 172, 254, 0.4);
+        }
+        
+        .convert-btn:active {
+            transform: translateY(0);
+        }
+        
+        .result {
+            margin-top: 30px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-header {
+            background: linear-gradient(45deg, #56ab2f 0%, #a8e6cf 100%);
+            padding: 20px 25px;
+            color: white;
+        }
+        
+        .result-header h3 {
+            font-size: 1.3em;
+            font-weight: 600;
+        }
+        
+        .result-header p {
+            margin-top: 5px;
+            opacity: 0.9;
+        }
+        
+        .comparison-section {
+            padding: 25px;
+        }
+        
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .sync-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #e8f5e8;
+            color: #2d5016;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+            border: 1px solid #b8e6b8;
+            animation: pulse 2s infinite;
+            transition: all 0.3s ease;
+            opacity: 0.8;
+        }
+        
+        .sync-indicator .icon {
+            animation: rotate 2s linear infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Dark theme for sync indicator */
+        .dark-theme .sync-indicator {
+            background: #1a2f1a;
+            color: #90ee90;
+            border-color: #2d5016;
+        }
+        
+        .comparison-section h4 {
+            color: #2c3e50;
+            font-size: 1.2em;
+            margin: 0;
+        }
+        
+        .file-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .file-selector label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #4facfe;
+        }
+        
+        .file-selector select {
+            padding: 8px 12px;
+            border: 2px solid #e3f2fd;
+            border-radius: 8px;
+            background: white;
+            min-width: 200px;
+            font-size: 14px;
+        }
+        
+        .download-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .download-actions .download-btn {
+            flex: 0 0 auto;
+            min-width: 200px;
+        }
+        
+        body.dark-theme .download-actions {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .comparison-panel {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e3f2fd;
+        }
+        
+        .comparison-panel h5 {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 15px;
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+          .comparison-panel textarea {
+            width: 100%;
+            height: 250px;
+            padding: 15px;
+            border: none;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            background: #fafbfc;
+            resize: vertical;
+            line-height: 1.5;
+        }
 
-      <main class="container">
-        <div class="converter-card">
-          <div class="upload-section">
-            <h2>Select Input File</h2>
-            <div class="file-upload" id="fileUpload">
-              <div class="upload-area">
-                <div class="upload-icon">📁</div>
-                <p>Drag & drop your file here or <span class="browse-text">browse</span></p>
-                <p class="supported-formats">Supported: .txt, .sql, .csv, .json</p>
-                <input type="file" id="fileInput" accept=".txt,.sql,.csv,.json" hidden>
-              </div>
-            </div>
-            <div class="file-info" id="fileInfo" style="display: none;">
-              <p><strong>Selected file:</strong> <span id="fileName"></span></p>
-              <p><strong>Size:</strong> <span id="fileSize"></span></p>
-            </div>
-          </div>
-
-          <div class="conversion-section">
-            <h2>Select Target Database</h2>
-            <div class="database-options">
-              <label class="db-option">
-                <input type="radio" name="targetDb" value="oracle">
-                <div class="db-card">
-                  <div class="db-icon">🔶</div>
-                  <h3>Oracle</h3>
-                  <p>Convert to Oracle SQL format</p>
+        .comparison-panel textarea:focus {
+            outline: none;
+            background: white;
+        }
+        
+        .content-display {
+            width: 100%;
+            height: 250px;
+            padding: 15px;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            background: #fafbfc;
+            overflow-y: auto;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .content-display:empty::before {
+            content: attr(data-placeholder);
+            color: #999;
+            font-style: italic;
+        }
+        
+        .content-display .diff-line {
+            display: block;
+            margin: 0;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        .content-display .diff-line.changed {
+            background-color: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+        
+        .content-display .diff-line.added {
+            background-color: #d1e7dd;
+            border-left: 3px solid #198754;
+        }
+        
+        .content-display .diff-line.removed {
+            background-color: #f8d7da;
+            border-left: 3px solid #dc3545;
+        }
+        
+        .content-display .diff-line.added-placeholder,
+        .content-display .diff-line.removed-placeholder {
+            min-height: 1.5em;
+            background-color: #f8f9fa;
+            border-left: 3px solid #dee2e6;
+        }
+        
+        .content-display .word-changed {
+            background-color: #fff3cd;
+            padding: 1px 2px;
+            border-radius: 2px;
+            font-weight: bold;
+        }
+        
+        .content-display .word-added {
+            background-color: #d1e7dd;
+            padding: 1px 2px;
+            border-radius: 2px;
+            font-weight: bold;
+        }
+        
+        .content-display .word-removed {
+            background-color: #f8d7da;
+            padding: 1px 2px;
+            border-radius: 2px;
+            font-weight: bold;
+            text-decoration: line-through;
+        }
+        
+        body.dark-theme .content-display {
+            background: rgba(40, 44, 52, 0.9);
+            border-color: rgba(255, 255, 255, 0.1);
+            color: #abb2bf;
+        }
+        
+        body.dark-theme .content-display:empty::before {
+            color: #666;
+        }
+        
+        body.dark-theme .content-display .diff-line.changed {
+            background-color: rgba(255, 193, 7, 0.2);
+            border-left-color: #ffc107;
+        }
+        
+        body.dark-theme .content-display .diff-line.added {
+            background-color: rgba(25, 135, 84, 0.2);
+            border-left-color: #198754;
+        }
+        
+        body.dark-theme .content-display .diff-line.removed {
+            background-color: rgba(220, 53, 69, 0.2);
+            border-left-color: #dc3545;
+        }
+        
+        body.dark-theme .content-display .word-changed {
+            background-color: rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+        }
+        
+        body.dark-theme .content-display .word-added {
+            background-color: rgba(25, 135, 84, 0.3);
+            color: #20c997;
+        }
+        
+        body.dark-theme .content-display .word-removed {
+            background-color: rgba(220, 53, 69, 0.3);
+            color: #ff6b6b;
+        }
+        
+        .changes-summary {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid #ff6b6b;
+            margin-bottom: 20px;
+        }
+        
+        .changes-summary h5 {
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+        
+        .changes-summary ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .changes-summary li {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.4;
+        }
+        
+        .download-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.3);
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(17, 153, 142, 0.4);
+        }
+        
+        .download-btn:disabled {
+            background: linear-gradient(45deg, #999 0%, #bbb 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 15px rgba(153, 153, 153, 0.3);
+        }
+        
+        .download-btn:disabled:hover {
+            transform: none;
+            box-shadow: 0 4px 15px rgba(153, 153, 153, 0.3);
+        }
+        
+        .export-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            margin-top: 15px;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .export-btn:disabled {
+            background: linear-gradient(45deg, #999 0%, #bbb 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 15px rgba(153, 153, 153, 0.3);
+        }
+        
+        .export-btn:disabled:hover {
+            transform: none;
+            box-shadow: 0 4px 15px rgba(153, 153, 153, 0.3);
+        }
+        
+        .export-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .export-actions .export-btn {
+            flex: 1;
+            margin-top: 0;
+            min-width: 200px;
+        }
+        
+        @media (max-width: 768px) {
+            .export-actions {
+                flex-direction: column;
+            }
+            
+            .export-actions .export-btn {
+                width: 100%;
+            }
+        }
+        
+        .download-options {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #e1f5fe;
+        }
+        
+        .download-options h5 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .download-config, .filename-config {
+            margin-bottom: 15px;
+        }
+        
+        .download-config label, .filename-config label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        .path-display {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .path-display input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #4caf50;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #f0f8f0;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+        
+        .path-status {
+            padding: 8px 12px;
+            background: linear-gradient(45deg, #4caf50 0%, #66bb6a 100%);
+            color: white;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        .setup-instructions {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+            margin-top: 10px;
+        }
+        
+        .setup-instructions strong {
+            color: #e65100;
+            font-size: 14px;
+        }
+        
+        .setup-instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .setup-instructions li {
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #333;
+        }
+        
+        .setup-instructions code {
+            background: #ffecb3;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #e65100;
+        }
+        
+        .filename-config input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            box-sizing: border-box;
+        }
+        
+        .download-options small {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        .icon {
+            margin-right: 8px;
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .form-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <div class="title-section">
+                    <h1>⚡ Database Converter</h1>
+                    <p>Convert SQL scripts between Oracle, SQL Server, and Sybase instantly</p>
                 </div>
-              </label>
-              
-              <label class="db-option">
-                <input type="radio" name="targetDb" value="sqlserver">
-                <div class="db-card">
-                  <div class="db-icon">🔷</div>
-                  <h3>SQL Server</h3>
-                  <p>Convert to Microsoft SQL Server format</p>
+                <div class="theme-toggle">
+                    <button id="refreshBtn" class="theme-btn" onclick="refreshPage()" title="Refresh Page">
+                        <span>🔄</span>
+                    </button>
+                    <button id="themeToggle" class="theme-btn" onclick="toggleTheme()">
+                        <span id="themeIcon">🌙</span>
+                    </button>
                 </div>
-              </label>
-              
-              <label class="db-option">
-                <input type="radio" name="targetDb" value="sybase">
-                <div class="db-card">
-                  <div class="db-icon">🔸</div>
-                  <h3>Sybase</h3>
-                  <p>Convert to Sybase SQL format</p>
-                </div>
-              </label>
             </div>
-          </div>
-
-          <div class="action-section">
-            <button id="convertBtn" class="convert-btn" disabled>
-              <span class="btn-text">Convert File</span>
-              <span class="btn-loader" style="display: none;">⏳ Converting...</span>
-            </button>
-          </div>
-
-          <div class="result-section" id="resultSection" style="display: none;">
-            <h2>Conversion Complete</h2>
-            <div class="result-info">
-              <p><strong>Output format:</strong> <span id="outputFormat"></span></p>
-              <button id="downloadBtn" class="download-btn">📥 Download Converted File</button>
-            </div>
-          </div>
         </div>
-      </main>
-
-      <footer>
-        <p>&copy; 2025 Database Converter. Built with ❤️</p>
-      </footer>
+        
+        <div class="content">
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="fileInput"><span class="icon">📁</span>Select Files:</label>
+                    <input type="file" id="fileInput" accept=".txt,.sql,.csv" multiple>
+                    <div class="file-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="folderMode" onchange="toggleFolderMode()">
+                            <span class="checkmark"></span>
+                            Select entire folder
+                        </label>
+                    </div>
+                    <div id="selectedFiles" class="selected-files"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="databaseSelect"><span class="icon">🎯</span>Convert to:</label>
+                    <select id="databaseSelect">
+                        <option value="">Select Database Type</option>
+                        <option value="oracle">🔥 Oracle</option>
+                        <option value="sqlserver">🏢 SQL Server</option>
+                        <option value="sybase">📊 Sybase</option>
+                        <option value="postgresql">🐘 PostgreSQL</option>
+                        <option value="mysql">🐬 MySQL</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="convert-btn" onclick="convertFile()">
+                <span class="icon">🚀</span>
+                <span id="convertText">Convert File</span>
+                <div id="convertSpinner" class="loading-spinner" style="display: none; width: 20px; height: 20px; margin-left: 10px;"></div>
+            </button>
+            
+            <div id="result" class="result">
+                <div class="result-header">
+                    <h3><span class="icon">✅</span>Conversion Result:</h3>
+                    <p id="resultText"></p>
+                </div>
+                
+                <div class="comparison-section" style="display: block;">
+                    <div class="comparison-header">
+                        <h4>📊 File Comparison</h4>
+                        <div class="sync-indicator" id="syncIndicator" style="display: none;">
+                            <span class="icon">🔄</span>
+                            <span>Synchronized Scrolling Active</span>
+                        </div>
+                        <div class="file-selector" id="fileSelector" style="display: none;">
+                            <label for="compareFileSelect">View File:</label>
+                            <select id="compareFileSelect" onchange="switchComparisonFile()">
+                                <option value="0">Select a file...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="comparison-container">
+                        <div class="comparison-panel">
+                            <h5 id="originalFileLabel">📄 Original File</h5>
+                            <div id="originalContent" class="content-display" data-placeholder="Original file content will appear here..."></div>
+                        </div>
+                        <div class="comparison-panel">
+                            <h5 id="convertedFileLabel">✨ Converted File</h5>
+                            <div id="convertedContent" class="content-display" data-placeholder="Converted file content will appear here..."></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Download Actions Section -->
+                    <div class="download-actions">
+                        <button class="download-btn" onclick="downloadFile()">
+                            <span class="icon">💾</span>Download Current File
+                        </button>
+                        <button id="downloadAllBtn" class="download-btn" onclick="downloadAllFiles()" style="display: none;">
+                            <span class="icon">📦</span>Download All as ZIP
+                        </button>
+                    </div>
+                    
+                    <div class="changes-summary">
+                        <h5 id="changesHeading">🔄 Changes Made:</h5>
+                        <ul id="changesList">
+                            <li>No changes yet - convert a file to see the differences</li>
+                        </ul>
+                        
+                        <!-- Export Actions Section -->
+                        <div class="export-actions">
+                            <button class="export-btn" onclick="exportCurrentFileChanges()">
+                                <span class="icon">📋</span>Export Current File Changes
+                            </button>
+                            <button id="exportAllBtn" class="export-btn" onclick="exportAllFilesChanges()" style="display: none;">
+                                <span class="icon">📊</span>Export All Files Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script>
+        let convertedContent = '';
+        let originalContent = '';
+        let originalFileName = '';
+        let changesMade = [];
+        let processedFiles = [];
+        let currentFileIndex = 0;
+        
+        // Theme Toggle Function
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+            
+            body.classList.toggle('dark-theme');
+            
+            if (body.classList.contains('dark-theme')) {
+                themeIcon.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                themeIcon.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        
+        // Load saved theme
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            // Default to light theme if no preference is saved
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-theme');
+                themeIcon.textContent = '☀️';
+            } else {
+                // Default to light theme (savedTheme === 'light' or null)
+                themeIcon.textContent = '🌙';
+                if (!savedTheme) {
+                    localStorage.setItem('theme', 'light');
+                }
+            }
+        }
+        
+        // Refresh Page Function
+        function refreshPage() {
+            // Save current theme before refresh
+            const currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+            localStorage.setItem('theme', currentTheme);
+            
+            // Refresh the page
+            window.location.reload();
+        }
+        
+        // Show/Hide Loading
+        function showLoading() {
+            const convertBtn = document.querySelector('.convert-btn');
+            const convertText = document.getElementById('convertText');
+            const convertSpinner = document.getElementById('convertSpinner');
+            
+            convertBtn.disabled = true;
+            convertText.textContent = 'Converting...';
+            convertSpinner.style.display = 'inline-block';
+        }
+        
+        function hideLoading() {
+            const convertBtn = document.querySelector('.convert-btn');
+            const convertText = document.getElementById('convertText');
+            const convertSpinner = document.getElementById('convertSpinner');
+            
+            convertBtn.disabled = false;
+            convertText.textContent = 'Convert File';
+            convertSpinner.style.display = 'none';
+        }
+        
+        // File input event listener
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.addEventListener('change', handleFileSelection);
+        });
+
+        function toggleFolderMode() {
+            const folderMode = document.getElementById('folderMode').checked;
+            const fileInput = document.getElementById('fileInput');
+            
+            if (folderMode) {
+                fileInput.setAttribute('webkitdirectory', '');
+                fileInput.setAttribute('directory', '');
+            } else {
+                fileInput.removeAttribute('webkitdirectory');
+                fileInput.removeAttribute('directory');
+            }
+            
+            // Clear previous selection
+            fileInput.value = '';
+            document.getElementById('selectedFiles').style.display = 'none';
+        }
+
+        function handleFileSelection() {
+            const fileInput = document.getElementById('fileInput');
+            const selectedFilesDiv = document.getElementById('selectedFiles');
+            const files = Array.from(fileInput.files);
+            
+            if (files.length === 0) {
+                selectedFilesDiv.style.display = 'none';
+                return;
+            }
+
+            // Filter for supported file types
+            const supportedFiles = files.filter(file => {
+                const ext = file.name.toLowerCase().split('.').pop();
+                return ['txt', 'sql', 'csv'].includes(ext);
+            });
+
+            if (supportedFiles.length === 0) {
+                alert('No supported files found. Please select .txt, .sql, or .csv files.');
+                return;
+            }
+
+            // Display selected files
+            displaySelectedFiles(supportedFiles);
+        }
+
+        function displaySelectedFiles(files) {
+            const selectedFilesDiv = document.getElementById('selectedFiles');
+            const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+            const filesPerPage = 5;
+            const totalPages = Math.ceil(files.length / filesPerPage);
+            
+            // Store files globally for pagination
+            if (!window.selectedFilesData) {
+                window.selectedFilesData = {};
+            }
+            window.selectedFilesData.files = files;
+            window.selectedFilesData.currentPage = 1;
+            window.selectedFilesData.filesPerPage = filesPerPage;
+            window.selectedFilesData.totalPages = totalPages;
+            
+            // Display summary
+            let html = `<div class="files-summary">
+                ${files.length} file(s) selected (${formatFileSize(totalSize)})
+            </div>`;
+            
+            // Add container for files and pagination
+            html += '<div id="paginatedFiles"></div>';
+            
+            selectedFilesDiv.innerHTML = html;
+            selectedFilesDiv.style.display = 'block';
+            
+            // Display first page
+            displayFilesPage(1);
+        }
+
+        function displayFilesPage(pageNumber) {
+            const data = window.selectedFilesData;
+            if (!data || !data.files) return;
+            
+            const startIndex = (pageNumber - 1) * data.filesPerPage;
+            const endIndex = Math.min(startIndex + data.filesPerPage, data.files.length);
+            const pageFiles = data.files.slice(startIndex, endIndex);
+            
+            let html = '';
+            
+            // Display files for current page
+            pageFiles.forEach(file => {
+                html += `<div class="file-item">
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${formatFileSize(file.size)}</span>
+                </div>`;
+            });
+            
+            // Add pagination controls if more than 5 files
+            if (data.totalPages > 1) {
+                html += '<div class="pagination-container">';
+                
+                // Previous button
+                html += `<button class="pagination-btn" onclick="changePage(${pageNumber - 1})" 
+                         ${pageNumber === 1 ? 'disabled' : ''}>‹</button>`;
+                
+                // Page numbers
+                for (let i = 1; i <= data.totalPages; i++) {
+                    const activeClass = i === pageNumber ? 'active' : '';
+                    html += `<button class="pagination-btn ${activeClass}" onclick="changePage(${i})">${i}</button>`;
+                }
+                
+                // Next button
+                html += `<button class="pagination-btn" onclick="changePage(${pageNumber + 1})" 
+                         ${pageNumber === data.totalPages ? 'disabled' : ''}>›</button>`;
+                
+                // Page info
+                html += `<span class="pagination-info">Page ${pageNumber} of ${data.totalPages}</span>`;
+                
+                html += '</div>';
+            }
+            
+            document.getElementById('paginatedFiles').innerHTML = html;
+            data.currentPage = pageNumber;
+        }
+
+        function changePage(pageNumber) {
+            const data = window.selectedFilesData;
+            if (!data || pageNumber < 1 || pageNumber > data.totalPages) return;
+            
+            displayFilesPage(pageNumber);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function convertFile() {
+            const fileInput = document.getElementById('fileInput');
+            const databaseSelect = document.getElementById('databaseSelect');
+            const result = document.getElementById('result');
+            const resultText = document.getElementById('resultText');
+            
+            // Hide sync indicator at start
+            hideSyncIndicator();
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select one or more files');
+                return;
+            }
+            
+            if (!databaseSelect.value) {
+                alert('Please select a database type');
+                return;
+            }
+            
+            // Filter for supported files
+            const files = Array.from(fileInput.files).filter(file => {
+                const ext = file.name.toLowerCase().split('.').pop();
+                return ['txt', 'sql', 'csv'].includes(ext);
+            });
+
+            if (files.length === 0) {
+                alert('No supported files found. Please select .txt, .sql, or .csv files.');
+                return;
+            }
+            
+            // Initialize batch processing
+            processedFiles = [];
+            currentFileIndex = 0;
+            
+            // Show loading animation
+            showLoading();
+            
+            // Process files
+            processFilesBatch(files, databaseSelect.value);
+        }
+
+        async function processFilesBatch(files, targetDB) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                currentFileIndex = i;
+                
+                try {
+                    const result = await processFile(file, targetDB);
+                    processedFiles.push(result);
+                } catch (error) {
+                    console.error(`Error processing ${file.name}:`, error);
+                    processedFiles.push({
+                        fileName: file.name,
+                        error: error.message,
+                        success: false
+                    });
+                }
+            }
+            
+            // Show results
+            showBatchResults();
+            hideLoading();
+        }
+
+        function processFile(file, targetDB) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const originalContent = e.target.result;
+                        const conversionResult = performConversion(originalContent, targetDB);
+                        
+                        resolve({
+                            fileName: file.name,
+                            originalName: file.name,
+                            originalContent: originalContent,
+                            convertedContent: conversionResult.content,
+                            changes: conversionResult.changes,
+                            success: true,
+                            targetDB: targetDB
+                        });
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                reader.onerror = function() {
+                    reject(new Error('Failed to read file'));
+                };
+                
+                reader.readAsText(file);
+            });
+        }
+
+        function showBatchResults() {
+            const result = document.getElementById('result');
+            const resultText = document.getElementById('resultText');
+            const fileSelector = document.getElementById('fileSelector');
+            const compareFileSelect = document.getElementById('compareFileSelect');
+            
+            const successCount = processedFiles.filter(f => f.success).length;
+            const errorCount = processedFiles.filter(f => !f.success).length;
+            
+            resultText.innerHTML = `
+                <strong>Conversion Complete!</strong><br>
+                ✅ ${successCount} file(s) converted successfully<br>
+                ${errorCount > 0 ? `❌ ${errorCount} file(s) failed<br>` : ''}
+                Target format: ${processedFiles[0]?.targetDB?.toUpperCase() || 'Unknown'}
+            `;
+            
+            // Populate file selector if multiple files
+            if (processedFiles.length > 1) {
+                compareFileSelect.innerHTML = '<option value="">Select a file to compare...</option>';
+                processedFiles.forEach((file, index) => {
+                    if (file.success) {
+                        compareFileSelect.innerHTML += `<option value="${index}">File ${index + 1}: ${file.fileName}</option>`;
+                    }
+                });
+                fileSelector.style.display = 'flex';
+            } else {
+                fileSelector.style.display = 'none';
+            }
+            
+            // Show first successful file
+            const firstSuccess = processedFiles.find(f => f.success);
+            if (firstSuccess) {
+                showFileComparison(processedFiles.indexOf(firstSuccess));
+            }
+            
+            // Add download all button if multiple files
+            if (processedFiles.filter(f => f.success).length > 1) {
+                addDownloadAllButton();
+                addExportAllButton();
+            } else {
+                hideDownloadAllButton();
+                hideExportAllButton();
+            }
+            
+            result.style.display = 'block';
+        }
+
+        function switchComparisonFile() {
+            const compareFileSelect = document.getElementById('compareFileSelect');
+            const selectedIndex = parseInt(compareFileSelect.value);
+            
+            if (!isNaN(selectedIndex) && processedFiles[selectedIndex]) {
+                showFileComparison(selectedIndex);
+            }
+        }
+
+        function showFileComparison(index) {
+            const file = processedFiles[index];
+            if (!file || !file.success) return;
+            
+            // Update global variables for compatibility
+            originalContent = file.originalContent;
+            convertedContent = file.convertedContent;
+            originalFileName = file.originalName;
+            changesMade = file.changes;
+            
+            // Update UI labels
+            document.getElementById('originalFileLabel').textContent = `📄 Original File: ${file.fileName}`;
+            document.getElementById('convertedFileLabel').textContent = `✨ Converted File: ${file.fileName}`;
+              // Update comparison panels with diff highlighting
+            const diffResult = createDiffDisplay(file.originalContent, file.convertedContent);
+            document.getElementById('originalContent').innerHTML = diffResult.original;
+            document.getElementById('convertedContent').innerHTML = diffResult.converted;
+            
+            // Set up synchronized scrolling
+            setupSynchronizedScrolling();
+            
+            // Show sync indicator
+            showSyncIndicator();
+
+            // Show changes from this file
+            displayChangesSummary(file.changes, file.fileName);
+        }
+
+        let isScrollSyncing = false;
+
+        function setupSynchronizedScrolling() {
+            const originalContent = document.getElementById('originalContent');
+            const convertedContent = document.getElementById('convertedContent');
+            
+            // Remove any existing event listeners
+            originalContent.removeEventListener('scroll', syncScrollRight);
+            convertedContent.removeEventListener('scroll', syncScrollLeft);
+            
+            // Add synchronized scroll event listeners
+            originalContent.addEventListener('scroll', syncScrollRight);
+            convertedContent.addEventListener('scroll', syncScrollLeft);
+            
+            // Add visual feedback on scroll start/end
+            let scrollTimeout;
+            
+            function handleScrollStart() {
+                const syncIndicator = document.getElementById('syncIndicator');
+                if (syncIndicator) {
+                    syncIndicator.style.opacity = '1';
+                    syncIndicator.style.transform = 'scale(1.05)';
+                }
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    if (syncIndicator) {
+                        syncIndicator.style.opacity = '0.8';
+                        syncIndicator.style.transform = 'scale(1)';
+                    }
+                }, 500);
+            }
+            
+            originalContent.addEventListener('scroll', handleScrollStart);
+            convertedContent.addEventListener('scroll', handleScrollStart);
+        }
+
+        function syncScrollRight() {
+            if (isScrollSyncing) return;
+            isScrollSyncing = true;
+            
+            const originalContent = document.getElementById('originalContent');
+            const convertedContent = document.getElementById('convertedContent');
+            
+            convertedContent.scrollTop = originalContent.scrollTop;
+            convertedContent.scrollLeft = originalContent.scrollLeft;
+            
+            setTimeout(() => { isScrollSyncing = false; }, 5);
+        }
+
+        function syncScrollLeft() {
+            if (isScrollSyncing) return;
+            isScrollSyncing = true;
+            
+            const originalContent = document.getElementById('originalContent');
+            const convertedContent = document.getElementById('convertedContent');
+            
+            originalContent.scrollTop = convertedContent.scrollTop;
+            originalContent.scrollLeft = convertedContent.scrollLeft;
+            
+            setTimeout(() => { isScrollSyncing = false; }, 5);
+        }
+
+        function showSyncIndicator() {
+            const syncIndicator = document.getElementById('syncIndicator');
+            if (syncIndicator) {
+                syncIndicator.style.display = 'flex';
+            }
+        }
+
+        function hideSyncIndicator() {
+            const syncIndicator = document.getElementById('syncIndicator');
+            if (syncIndicator) {
+                syncIndicator.style.display = 'none';
+            }
+        }
+
+        function addDownloadAllButton() {
+            const downloadAllBtn = document.getElementById('downloadAllBtn');
+            
+            // Show the download all button
+            if (downloadAllBtn) {
+                downloadAllBtn.style.display = 'block';
+            }
+        }
+
+        function hideDownloadAllButton() {
+            const downloadAllBtn = document.getElementById('downloadAllBtn');
+            
+            // Hide the download all button
+            if (downloadAllBtn) {
+                downloadAllBtn.style.display = 'none';
+            }
+        }
+
+        function addExportAllButton() {
+            const exportAllBtn = document.getElementById('exportAllBtn');
+            
+            // Show the export all button
+            if (exportAllBtn) {
+                exportAllBtn.style.display = 'block';
+            }
+        }
+
+        function hideExportAllButton() {
+            const exportAllBtn = document.getElementById('exportAllBtn');
+            
+            // Hide the export all button
+            if (exportAllBtn) {
+                exportAllBtn.style.display = 'none';
+            }
+        }
+
+        function downloadAllFiles() {
+            const successfulFiles = processedFiles.filter(f => f.success);
+            
+            if (successfulFiles.length === 0) {
+                alert('No files to download');
+                return;
+            }
+
+            // Show loading message
+            const downloadBtn = document.getElementById('downloadAllBtn');
+            const originalText = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = '<span class="icon">⏳</span>Creating ZIP...';
+            downloadBtn.disabled = true;
+
+            // Create ZIP file
+            const zip = new JSZip();
+            
+            // Add each converted file to the ZIP
+            successfulFiles.forEach(file => {
+                const fileName = file.fileName.replace(/\.[^/.]+$/, '') + '_converted.' + file.fileName.split('.').pop();
+                zip.file(fileName, file.convertedContent);
+            });
+
+            // Generate ZIP and download
+            zip.generateAsync({type: "blob"})
+                .then(function(content) {
+                    // Create download link
+                    const url = window.URL.createObjectURL(content);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `converted_files_${new Date().toISOString().slice(0,10)}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    // Restore button
+                    downloadBtn.innerHTML = originalText;
+                    downloadBtn.disabled = false;
+                })
+                .catch(function(error) {
+                    console.error('Error creating ZIP:', error);
+                    alert('Error creating ZIP file. Please try again.');
+                    
+                    // Restore button
+                    downloadBtn.innerHTML = originalText;
+                    downloadBtn.disabled = false;
+                });
+        }
+
+        function exportCurrentFileChanges() {
+            let reportContent = '';
+            const timestamp = new Date().toLocaleString();
+            
+            // Find current file being viewed
+            const compareFileSelect = document.getElementById('compareFileSelect');
+            let currentFile = null;
+            let currentFileName = 'Unknown';
+            let currentChanges = [];
+            let targetDB = 'Unknown';
+            
+            if (compareFileSelect && compareFileSelect.value !== '') {
+                // Multiple files - get the selected one
+                const selectedIndex = parseInt(compareFileSelect.value);
+                currentFile = processedFiles[selectedIndex];
+                if (currentFile) {
+                    currentFileName = currentFile.fileName;
+                    currentChanges = currentFile.changes || [];
+                    targetDB = currentFile.targetDB || 'Unknown';
+                }
+            } else if (processedFiles && processedFiles.length === 1) {
+                // Single file
+                currentFile = processedFiles[0];
+                currentFileName = currentFile.fileName;
+                currentChanges = currentFile.changes || [];
+                targetDB = currentFile.targetDB || 'Unknown';
+            } else {
+                // Fallback to global variables
+                currentFileName = originalFileName || 'Unknown';
+                currentChanges = changesMade || [];
+                targetDB = document.getElementById('databaseSelect')?.value || 'Unknown';
+            }
+            
+            // Header
+            reportContent += `DATABASE CONVERSION CHANGES REPORT - SINGLE FILE\n`;
+            reportContent += `Generated on: ${timestamp}\n`;
+            reportContent += `${'='.repeat(50)}\n\n`;
+            
+            // File details
+            reportContent += `FILE: ${currentFileName}\n`;
+            reportContent += `Target Database: ${targetDB.toUpperCase()}\n`;
+            reportContent += `Changes Made (${currentChanges.length}):\n\n`;
+            
+            if (currentChanges.length > 0) {
+                currentChanges.forEach((change, i) => {
+                    reportContent += `  ${i + 1}. ${change}\n`;
+                });
+            } else {
+                reportContent += `  No changes were required for this file.\n`;
+            }
+            
+            // Create and download the report
+            const blob = new Blob([reportContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentFileName.replace(/\.[^/.]+$/, '')}_Changes_Report_${new Date().getTime()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function exportAllFilesChanges() {
+            if (!processedFiles || processedFiles.length === 0) {
+                alert('No files to export changes for');
+                return;
+            }
+
+            // Show loading message
+            const exportBtn = document.getElementById('exportAllBtn');
+            const originalText = exportBtn.innerHTML;
+            exportBtn.innerHTML = '<span class="icon">⏳</span>Creating Report...';
+            exportBtn.disabled = true;
+
+            let reportContent = '';
+            const timestamp = new Date().toLocaleString();
+            
+            // Header
+            reportContent += `DATABASE CONVERSION CHANGES REPORT - ALL FILES\n`;
+            reportContent += `Generated on: ${timestamp}\n`;
+            reportContent += `${'='.repeat(50)}\n\n`;
+            
+            const successfulFiles = processedFiles.filter(f => f.success);
+            const failedFiles = processedFiles.filter(f => !f.success);
+            
+            reportContent += `SUMMARY:\n`;
+            reportContent += `Total Files Processed: ${processedFiles.length}\n`;
+            reportContent += `Successfully Converted: ${successfulFiles.length}\n`;
+            reportContent += `Failed Conversions: ${failedFiles.length}\n`;
+            reportContent += `Target Database: ${successfulFiles[0]?.targetDB?.toUpperCase() || 'Unknown'}\n\n`;
+            
+            // Details for each successful file
+            successfulFiles.forEach((file, index) => {
+                reportContent += `${'-'.repeat(30)}\n`;
+                reportContent += `FILE ${index + 1}: ${file.fileName}\n`;
+                reportContent += `${'-'.repeat(30)}\n`;
+                reportContent += `Target Database: ${file.targetDB.toUpperCase()}\n`;
+                reportContent += `Changes Made (${file.changes.length}):\n`;
+                
+                if (file.changes.length > 0) {
+                    file.changes.forEach((change, i) => {
+                        reportContent += `  ${i + 1}. ${change}\n`;
+                    });
+                } else {
+                    reportContent += `  No changes were required for this file.\n`;
+                }
+                reportContent += `\n`;
+            });
+            
+            // Failed files
+            if (failedFiles.length > 0) {
+                reportContent += `FAILED CONVERSIONS:\n`;
+                failedFiles.forEach((file, index) => {
+                    reportContent += `  ${index + 1}. ${file.fileName} - Error: ${file.error}\n`;
+                });
+                reportContent += `\n`;
+            }
+            
+            // Create and download the report
+            setTimeout(() => {
+                const blob = new Blob([reportContent], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `All_Files_Changes_Report_${new Date().getTime()}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+
+                // Restore button
+                exportBtn.innerHTML = originalText;
+                exportBtn.disabled = false;
+            }, 500);
+        }
+        
+        function performConversion(content, targetDB) {
+            let converted = content;
+            let changes = [];
+            
+            // Make search case-insensitive but preserve original case in replacements
+            const originalContent = content;
+            const upperContent = content.toUpperCase();
+            
+            // First, try stored procedure conversion
+            const storedProcResult = convertStoredProcedure(content, targetDB);
+            if (storedProcResult.changes.length > 0) {
+                converted = storedProcResult.content;
+                changes = [...changes, ...storedProcResult.changes];
+            }
+            
+            // Check if this is a stored procedure
+            const isStoredProcedure = upperContent.includes('CREATE PROCEDURE') || 
+                                    upperContent.includes('CREATE PROC') ||
+                                    upperContent.includes('BEGIN') && upperContent.includes('END');
+            
+            if (isStoredProcedure) {
+                const procedureResult = convertStoredProcedure(content, targetDB);
+                return procedureResult;
+            }
+            
+            if (targetDB === 'oracle') {
+                // VARCHAR to VARCHAR2 (case-insensitive)
+                if (upperContent.includes('VARCHAR(')) {
+                    converted = converted.replace(/VARCHAR\(/gi, 'VARCHAR2(');
+                    changes.push('Changed VARCHAR( to VARCHAR2(');
+                }
+                
+                // GETDATE() to SYSDATE (case-insensitive)
+                if (upperContent.includes('GETDATE()')) {
+                    converted = converted.replace(/GETDATE\(\)/gi, 'SYSDATE');
+                    changes.push('Changed GETDATE() to SYSDATE');
+                }
+                
+                // IDENTITY to Oracle sequence-based approach (case-insensitive)
+                if (upperContent.includes('IDENTITY(1,1)')) {
+                    converted = converted.replace(/IDENTITY\(1,1\)/gi, 'GENERATED BY DEFAULT AS IDENTITY');
+                    changes.push('Changed IDENTITY(1,1) to GENERATED BY DEFAULT AS IDENTITY');
+                }
+                
+                // TOP to ROWNUM (case-insensitive)
+                if (upperContent.includes('SELECT TOP')) {
+                    converted = converted.replace(/SELECT TOP (\d+)/gi, 'SELECT * FROM (SELECT');
+                    converted = converted.replace(/ORDER BY/gi, 'ORDER BY) WHERE ROWNUM <= $1 ORDER BY');
+                    changes.push('Changed SELECT TOP to ROWNUM-based query');
+                }
+                
+                // DATETIME to DATE (case-insensitive)
+                if (upperContent.includes('DATETIME')) {
+                    converted = converted.replace(/DATETIME/gi, 'DATE');
+                    changes.push('Changed DATETIME to DATE');
+                }
+                
+                // DECIMAL to NUMBER (case-insensitive)
+                if (upperContent.includes('DECIMAL(')) {
+                    converted = converted.replace(/DECIMAL\(/gi, 'NUMBER(');
+                    changes.push('Changed DECIMAL( to NUMBER(');
+                }
+                
+                // INT to NUMBER (case-insensitive)
+                if (upperContent.match(/\bINT\s/i)) {
+                    converted = converted.replace(/\bINT\s/gi, 'NUMBER ');
+                    changes.push('Changed INT to NUMBER');
+                }
+                
+                // CHAR to VARCHAR2 (case-insensitive)
+                if (upperContent.includes('CHAR(')) {
+                    converted = converted.replace(/\bCHAR\(/gi, 'VARCHAR2(');
+                    changes.push('Changed CHAR( to VARCHAR2(');
+                }
+                
+                // Add warning for unsupported constructs
+                if (upperContent.includes('CREATE PROCEDURE') || upperContent.includes('BEGIN') || upperContent.includes('DECLARE')) {
+                    changes.push('⚠️ WARNING: Stored procedures require manual conversion - only basic syntax transformed');
+                }
+                
+            } else if (targetDB === 'sqlserver') {
+                // VARCHAR2 to VARCHAR (case-insensitive)
+                if (upperContent.includes('VARCHAR2(')) {
+                    converted = converted.replace(/VARCHAR2\(/gi, 'VARCHAR(');
+                    changes.push('Changed VARCHAR2( to VARCHAR(');
+                }
+                
+                // SYSDATE to GETDATE() (case-insensitive)
+                if (upperContent.includes('SYSDATE')) {
+                    converted = converted.replace(/SYSDATE/gi, 'GETDATE()');
+                    changes.push('Changed SYSDATE to GETDATE()');
+                }
+                
+                // Oracle sequences to IDENTITY (case-insensitive)
+                if (upperContent.includes('.NEXTVAL')) {
+                    converted = converted.replace(/\w+\.NEXTVAL/gi, 'IDENTITY(1,1)');
+                    changes.push('Removed .NEXTVAL and added IDENTITY(1,1)');
+                }
+                
+                // NUMBER to appropriate SQL Server types (case-insensitive)
+                if (upperContent.includes('NUMBER(')) {
+                    converted = converted.replace(/NUMBER\(/gi, 'DECIMAL(');
+                    changes.push('Changed NUMBER( to DECIMAL(');
+                }
+                
+                if (upperContent.match(/\bNUMBER\s/i)) {
+                    converted = converted.replace(/\bNUMBER\s/gi, 'INT ');
+                    changes.push('Changed NUMBER to INT');
+                }
+                
+                // ROWNUM to TOP (case-insensitive)
+                if (upperContent.includes('ROWNUM')) {
+                    converted = converted.replace(/WHERE ROWNUM <= (\d+)/gi, '');
+                    converted = converted.replace(/SELECT \* FROM \(SELECT/gi, 'SELECT TOP $1');
+                    changes.push('Changed ROWNUM to TOP syntax');
+                }
+                
+                // LIMIT to TOP (case-insensitive)
+                if (upperContent.includes('LIMIT ')) {
+                    converted = converted.replace(/LIMIT (\d+)/gi, '');
+                    converted = converted.replace(/SELECT/gi, 'SELECT TOP $1');
+                    changes.push('Changed LIMIT to TOP');
+                }
+                
+                // Add warning for unsupported constructs
+                if (upperContent.includes('CREATE PROCEDURE') || upperContent.includes('BEGIN') || upperContent.includes('DECLARE')) {
+                    changes.push('⚠️ WARNING: Stored procedures require manual conversion - only basic syntax transformed');
+                }
+                
+            } else if (targetDB === 'sybase') {
+                // VARCHAR2 to VARCHAR
+                if (content.includes('VARCHAR2(')) {
+                    converted = converted.replace(/VARCHAR2\(/g, 'VARCHAR(');
+                    changes.push('Changed VARCHAR2( to VARCHAR(');
+                }
+                
+                // SYSDATE to GETDATE()
+                if (content.includes('SYSDATE')) {
+                    converted = converted.replace(/SYSDATE/g, 'GETDATE()');
+                    changes.push('Changed SYSDATE to GETDATE()');
+                }
+                
+                // Handle different syntax for LIMIT
+                if (content.includes('LIMIT ')) {
+                    converted = converted.replace(/LIMIT (\d+)/g, '');
+                    converted = converted.replace(/SELECT/g, 'SET ROWCOUNT $1; SELECT');
+                    changes.push('Changed LIMIT to SET ROWCOUNT');
+                }
+                
+                // TOP to SET ROWCOUNT
+                if (content.includes('SELECT TOP')) {
+                    converted = converted.replace(/SELECT TOP (\d+)/g, 'SET ROWCOUNT $1; SELECT');
+                    changes.push('Changed SELECT TOP to SET ROWCOUNT');
+                }
+                
+                // NUMBER to appropriate Sybase types
+                if (content.includes('NUMBER(')) {
+                    converted = converted.replace(/NUMBER\(/g, 'DECIMAL(');
+                    changes.push('Changed NUMBER( to DECIMAL(');
+                }
+                
+                if (content.includes('NUMBER ')) {
+                    converted = converted.replace(/NUMBER /g, 'INT ');
+                    changes.push('Changed NUMBER to INT');
+                }
+                
+                // IDENTITY syntax adjustment
+                if (content.includes('IDENTITY(1,1)')) {
+                    converted = converted.replace(/IDENTITY\(1,1\)/g, 'IDENTITY');
+                    changes.push('Changed IDENTITY(1,1) to IDENTITY');
+                }
+            }
+            
+            if (changes.length === 0) {
+                changes.push('No database-specific changes needed for this file');
+            }
+            
+            return { content: converted, changes: changes };
+        }
+        
+        function displayChangesSummary(changes = null, fileName = null) {
+            const changesList = document.getElementById('changesList');
+            const changesHeading = document.getElementById('changesHeading');
+            
+            changesList.innerHTML = '';
+            
+            // Update heading to include filename if provided
+            if (fileName) {
+                changesHeading.textContent = `🔄 Changes Made (${fileName}):`;
+            } else {
+                changesHeading.textContent = '🔄 Changes Made:';
+            }
+            
+            const changesToShow = changes || changesMade;
+            if (changesToShow.length === 0) {
+                const li = document.createElement('li');
+                li.textContent = 'No changes made to this file';
+                changesList.appendChild(li);
+            } else {
+                changesToShow.forEach(change => {
+                    const li = document.createElement('li');
+                    li.textContent = change;
+                    changesList.appendChild(li);
+                });
+            }
+        }
+        
+        function downloadFile() {
+            const databaseSelect = document.getElementById('databaseSelect');
+            const targetDB = databaseSelect.value;
+            
+            // Auto-generate filename
+            const baseName = originalFileName.replace(/\.[^/.]+$/, '');
+            const fileName = baseName + '_' + targetDB + '.sql';
+            
+            // Create and download the file
+            const blob = new Blob([convertedContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            
+            // Add download to document, click, and clean up
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            // Show download success message
+            showDownloadSuccess(fileName);
+        }
+        
+        function showDownloadSuccess(fileName) {
+            // Create temporary success message
+            const successMsg = document.createElement('div');
+            successMsg.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(45deg, #11998e 0%, #38ef7d 100%);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 1000;
+                font-weight: 600;
+                animation: slideIn 0.3s ease;
+            `;
+            successMsg.innerHTML = `✅ Downloaded: ${fileName}`;
+            
+            document.body.appendChild(successMsg);
+            
+            // Remove message after 3 seconds
+            setTimeout(() => {
+                if (successMsg.parentNode) {
+                    successMsg.parentNode.removeChild(successMsg);
+                }
+            }, 3000);
+        }
+        
+        // Comprehensive Stored Procedure Conversion Functions
+        function convertStoredProcedure(content, targetDB) {
+            let converted = content;
+            let changes = [];
+            
+            // Detect if this is a stored procedure
+            const upperContent = content.toUpperCase();
+            const isStoredProcedure = upperContent.includes('CREATE PROCEDURE') || 
+                                    upperContent.includes('CREATE PROC') ||
+                                    upperContent.includes('CREATE OR REPLACE PROCEDURE');
+            
+            if (!isStoredProcedure) {
+                return { content, changes: [] }; // Not a stored procedure, return as-is
+            }
+            
+            if (targetDB === 'oracle') {
+                // Convert to Oracle PL/SQL
+                converted = convertToOracleStoredProc(converted, changes);
+            } else if (targetDB === 'sqlserver') {
+                // Convert to SQL Server T-SQL
+                converted = convertToSQLServerStoredProc(converted, changes);
+            } else if (targetDB === 'sybase') {
+                // Convert to Sybase ASE
+                converted = convertToSybaseStoredProc(converted, changes);
+            }
+            
+            return { content: converted, changes };
+        }
+        
+        function convertToOracleStoredProc(content, changes) {
+            let converted = content;
+            
+            // 1. Procedure Declaration
+            converted = converted.replace(/CREATE\s+PROCEDURE\s+(\w+)\s*\(/gi, 'CREATE OR REPLACE PROCEDURE $1 (');
+            changes.push('✅ Converted to Oracle CREATE OR REPLACE PROCEDURE syntax');
+            
+            // 2. Parameter Declarations - Convert OUT to OUT
+            converted = converted.replace(/\bOUT\s+(\w+)\s+(CHAR|VARCHAR|INT|DECIMAL)\s*\(([^)]+)\)/gi, '$1 OUT $2($3)');
+            converted = converted.replace(/\bOUT\s+(\w+)\s+(INT|NUMBER)\b/gi, '$1 OUT NUMBER');
+            changes.push('✅ Converted parameter declarations to Oracle format');
+            
+            // 3. Data Types
+            converted = converted.replace(/\bCHAR\s*\(/gi, 'VARCHAR2(');
+            converted = converted.replace(/\bVARCHAR\s*\(/gi, 'VARCHAR2(');
+            converted = converted.replace(/\bINT\b/gi, 'NUMBER');
+            converted = converted.replace(/\bINTEGER\b/gi, 'NUMBER');
+            changes.push('✅ Converted data types to Oracle equivalents');
+            
+            // 4. BEGIN/END Structure
+            converted = converted.replace(/\bBEGIN\b/gi, 'IS\nBEGIN');
+            changes.push('✅ Added IS keyword before BEGIN');
+            
+            // 5. Variable Declarations
+            converted = converted.replace(/DECLARE\s+(\w+)\s+(CHAR|VARCHAR|INT|DECIMAL)\s*\(([^)]+)\)/gi, '$1 VARCHAR2($3);');
+            converted = converted.replace(/DECLARE\s+(\w+)\s+(INT|INTEGER)\b/gi, '$1 NUMBER;');
+            converted = converted.replace(/DECLARE\s+(\w+)\s+EXCEPTION\s+FOR\s+SQLSTATE\s+'([^']+)'/gi, '$1 EXCEPTION;');
+            changes.push('✅ Converted variable declarations to Oracle PL/SQL format');
+            
+            // 6. Cursor Declarations
+            converted = converted.replace(/DECLARE\s+(\w+)\s+CURSOR\s+FOR\s*/gi, 'CURSOR $1 IS ');
+            changes.push('✅ Converted cursor syntax to Oracle format');
+            
+            // 7. Loop Constructs
+            converted = converted.replace(/(\w+):\s*LOOP/gi, 'LOOP');
+            converted = converted.replace(/END\s+LOOP\s+(\w+);/gi, 'END LOOP;');
+            converted = converted.replace(/LEAVE\s+(\w+);/gi, 'EXIT;');
+            changes.push('✅ Converted loop syntax to Oracle PL/SQL');
+            
+            // 8. Exception Handling
+            converted = converted.replace(/IF\s+SQLSTATE\s+=\s+(\w+)\s+THEN/gi, 'WHEN $1 THEN');
+            changes.push('✅ Converted exception handling to Oracle format');
+            
+            // 9. FETCH Statement
+            converted = converted.replace(/FETCH\s+NEXT\s+(\w+)\s+INTO/gi, 'FETCH $1 INTO');
+            changes.push('✅ Converted FETCH syntax to Oracle format');
+            
+            // 10. CAST Function
+            converted = converted.replace(/CAST\s*\(\s*([^)]+)\s+AS\s+INTEGER\s*\)/gi, 'TO_NUMBER($1)');
+            changes.push('✅ Converted CAST to Oracle TO_NUMBER function');
+            
+            return converted;
+        }
+        
+        function convertToSQLServerStoredProc(content, changes) {
+            let converted = content;
+            
+            // 1. Procedure Declaration
+            converted = converted.replace(/CREATE\s+OR\s+REPLACE\s+PROCEDURE/gi, 'CREATE PROCEDURE');
+            changes.push('✅ Converted to SQL Server CREATE PROCEDURE syntax');
+            
+            // 2. Parameter Declarations
+            converted = converted.replace(/(\w+)\s+OUT\s+(VARCHAR2|CHAR)\s*\(([^)]+)\)/gi, '@$1 $2($3) OUTPUT');
+            converted = converted.replace(/(\w+)\s+OUT\s+(NUMBER|INT)\b/gi, '@$1 INT OUTPUT');
+            converted = converted.replace(/(\w+)\s+IN\s+(VARCHAR2|CHAR)\s*\(([^)]+)\)/gi, '@$1 VARCHAR($3)');
+            changes.push('✅ Converted parameters to SQL Server @parameter format');
+            
+            // 3. Data Types
+            converted = converted.replace(/\bVARCHAR2\s*\(/gi, 'VARCHAR(');
+            converted = converted.replace(/\bNUMBER\b/gi, 'INT');
+            converted = converted.replace(/\bDATE\b/gi, 'DATETIME');
+            changes.push('✅ Converted data types to SQL Server equivalents');
+            
+            // 4. IS/AS to AS
+            converted = converted.replace(/\)\s*IS\s*BEGIN/gi, ')\nAS\nBEGIN');
+            converted = converted.replace(/\)\s*AS\s*IS\s*BEGIN/gi, ')\nAS\nBEGIN');
+            changes.push('✅ Converted IS to AS keyword');
+            
+            // 5. Variable Declarations
+            converted = converted.replace(/(\w+)\s+(VARCHAR2|CHAR)\s*\(([^)]+)\);/gi, 'DECLARE @$1 VARCHAR($3);');
+            converted = converted.replace(/(\w+)\s+(NUMBER|INT)\b;/gi, 'DECLARE @$1 INT;');
+            changes.push('✅ Converted variable declarations to SQL Server DECLARE format');
+            
+            // 6. Cursor Declarations
+            converted = converted.replace(/CURSOR\s+(\w+)\s+IS\s*/gi, 'DECLARE $1 CURSOR FOR ');
+            changes.push('✅ Converted cursor syntax to SQL Server format');
+            
+            // 7. Loop to WHILE
+            converted = converted.replace(/LOOP\s*/gi, 'WHILE @@FETCH_STATUS = 0\nBEGIN\n');
+            converted = converted.replace(/END\s+LOOP;/gi, 'FETCH NEXT FROM curThisCust INTO @ThisCompany, @ThisValue;\nEND;');
+            converted = converted.replace(/EXIT;/gi, 'BREAK;');
+            changes.push('✅ Converted LOOP to SQL Server WHILE construct');
+            
+            // 8. Exception Handling
+            converted = converted.replace(/WHEN\s+(\w+)\s+THEN/gi, 'IF @@ERROR <> 0\nBEGIN');
+            changes.push('✅ Converted exception handling to SQL Server format');
+            
+            // 9. FETCH Statement
+            converted = converted.replace(/FETCH\s+(\w+)\s+INTO/gi, 'FETCH NEXT FROM $1 INTO');
+            changes.push('✅ Converted FETCH syntax to SQL Server format');
+            
+            // 10. Oracle Functions
+            converted = converted.replace(/TO_NUMBER\s*\(\s*([^)]+)\s*\)/gi, 'CAST($1 AS INT)');
+            converted = converted.replace(/SYSDATE/gi, 'GETDATE()');
+            changes.push('✅ Converted Oracle functions to SQL Server equivalents');
+            
+            return converted;
+        }
+        
+        function convertToSybaseStoredProc(content, changes) {
+            let converted = content;
+            
+            // 1. Procedure Declaration
+            converted = converted.replace(/CREATE\s+OR\s+REPLACE\s+PROCEDURE/gi, 'CREATE PROCEDURE');
+            changes.push('✅ Converted to Sybase CREATE PROCEDURE syntax');
+            
+            // 2. Parameter Declarations
+            converted = converted.replace(/(\w+)\s+OUT\s+(VARCHAR2|CHAR)\s*\(([^)]+)\)/gi, '@$1 VARCHAR($3) OUTPUT');
+            converted = converted.replace(/(\w+)\s+OUT\s+(NUMBER|INT)\b/gi, '@$1 INT OUTPUT');
+            changes.push('✅ Converted parameters to Sybase @parameter format');
+            
+            // 3. Data Types
+            converted = converted.replace(/\bVARCHAR2\s*\(/gi, 'VARCHAR(');
+            converted = converted.replace(/\bNUMBER\b/gi, 'INT');
+            converted = converted.replace(/\bDATE\b/gi, 'DATETIME');
+            changes.push('✅ Converted data types to Sybase equivalents');
+            
+            // 4. IS/AS to AS
+            converted = converted.replace(/\)\s*IS\s*BEGIN/gi, ')\nAS\nBEGIN');
+            changes.push('✅ Converted IS to AS keyword');
+            
+            // 5. Variable Declarations
+            converted = converted.replace(/(\w+)\s+(VARCHAR2|CHAR)\s*\(([^)]+)\);/gi, 'DECLARE @$1 VARCHAR($3)');
+            converted = converted.replace(/(\w+)\s+(NUMBER|INT)\b;/gi, 'DECLARE @$1 INT');
+            changes.push('✅ Converted variable declarations to Sybase format');
+            
+            // 6. Cursor Declarations
+            converted = converted.replace(/CURSOR\s+(\w+)\s+IS\s*/gi, 'DECLARE $1 CURSOR FOR ');
+            changes.push('✅ Converted cursor syntax to Sybase format');
+            
+            // 7. Loop Constructs
+            converted = converted.replace(/LOOP\s*/gi, 'WHILE @@sqlstatus = 0\nBEGIN\n');
+            converted = converted.replace(/END\s+LOOP;/gi, 'FETCH $1\nEND');
+            converted = converted.replace(/EXIT;/gi, 'BREAK');
+            changes.push('✅ Converted LOOP to Sybase WHILE construct');
+            
+            // 8. Exception Handling
+            converted = converted.replace(/WHEN\s+(\w+)\s+THEN/gi, 'IF @@error <> 0\nBEGIN');
+            changes.push('✅ Converted exception handling to Sybase format');
+            
+            // 9. FETCH Statement
+            converted = converted.replace(/FETCH\s+NEXT\s+(\w+)\s+INTO/gi, 'FETCH $1 INTO');
+            changes.push('✅ Converted FETCH syntax to Sybase format');
+            
+            // 10. Functions
+            converted = converted.replace(/TO_NUMBER\s*\(\s*([^)]+)\s*\)/gi, 'CONVERT(INT, $1)');
+            converted = converted.replace(/SYSDATE/gi, 'GETDATE()');
+            changes.push('✅ Converted functions to Sybase equivalents');
+            
+            return converted;
+        }
+
+        // Handle browse button click (educational purpose - browser security limits actual path selection)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load theme on page load
+            loadTheme();
+            
+            const browseBtn = document.getElementById('browsePath');
+            const pathInput = document.getElementById('downloadPath');
+            
+            if (browseBtn) {
+                browseBtn.addEventListener('click', function() {
+                    alert('📂 Browser Security Note:\n\nDue to browser security restrictions, files will automatically save to your default Downloads folder.\n\nTo change the download location:\n1. Go to your browser settings\n2. Look for "Downloads" section\n3. Change the default download location\n\nThe custom filename option below still works perfectly!');
+                    pathInput.value = 'Downloads folder (browser default)';
+                });
+            }
+        });
+
+        function createDiffDisplay(originalText, convertedText) {
+            // Simple display without any diff highlighting
+            const originalLines = originalText.split('\n');
+            const convertedLines = convertedText.split('\n');
+            
+            const maxLines = Math.max(originalLines.length, convertedLines.length);
+            let originalHtml = '';
+            let convertedHtml = '';
+            
+            for (let i = 0; i < maxLines; i++) {
+                const originalLine = originalLines[i] !== undefined ? originalLines[i] : '';
+                const convertedLine = convertedLines[i] !== undefined ? convertedLines[i] : '';
+                
+                // Just display the lines without any highlighting
+                originalHtml += `<span class="diff-line">${escapeHtml(originalLine)}</span>\n`;
+                convertedHtml += `<span class="diff-line">${escapeHtml(convertedLine)}</span>\n`;
+            }
+            
+            return {
+                original: originalHtml,
+                converted: convertedHtml
+            };
+        }
+          function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
 </html>
